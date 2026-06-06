@@ -65,9 +65,11 @@ export default function Login() {
           <div className={`auth-input ${fieldErrors.email ? 'is-error' : ''}`}>
             <Mail size={18} />
             <input
-              name="aptis-login-account"
+              name="aptis-login-account-no-autofill"
               type="email"
-              autoComplete="email"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ban@example.com"
@@ -81,9 +83,9 @@ export default function Login() {
           <div className={`auth-input ${fieldErrors.password ? 'is-error' : ''}`}>
             <LockKeyhole size={18} />
             <input
-              name="aptis-login-password"
+              name="aptis-login-password-no-autofill"
               type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Nhập mật khẩu"
