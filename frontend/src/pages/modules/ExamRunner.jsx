@@ -595,6 +595,152 @@ export default function ExamRunner() {
     );
   }
 
+  function speakingImageRows(q) {
+    return (q.content || '')
+      .split(/\r?\n/)
+      .map((line, index) => ({ question: line.trim(), answer: [q.optionA, q.optionB, q.optionC][index] || '' }))
+      .filter((row) => row.question);
+  }
+
+  function speakingPracticeScreens() {
+    const part1Questions = speakingQ1Questions();
+    return [
+      ...(part1Questions.length > 0 ? [{
+        type: 'part1Group',
+        part: 'Part 1',
+        title: 'Speaking Part 1',
+        subtitle: 'Trả lời lần lượt các câu hỏi ngắn.',
+        questions: part1Questions
+      }] : []),
+      ...speakingImageListQuestions().map((q) => ({
+        type: 'image',
+        part: q.optionF === 'SPEAKING_COMPARE_LIST' ? 'Part 3' : 'Part 2',
+        title: q.optionF === 'SPEAKING_COMPARE_LIST' ? 'Speaking Part 3' : 'Speaking Part 2',
+        subtitle: q.optionF === 'SPEAKING_COMPARE_LIST' ? 'So sánh 2 ảnh và đưa lý do.' : 'Mô tả ảnh và trả lời câu hỏi.',
+        q
+      })),
+      ...speakingPart4Questions().map((q) => ({
+        type: 'part4',
+        part: 'Part 4',
+        title: 'Speaking Part 4',
+        subtitle: 'Trả lời câu hỏi trong 120 giây.',
+        q
+      }))
+    ];
+  }
+
+  function renderSpeakingPracticeQ1(q) {
+    return (
+      <section className="rounded-lg border border-cyan-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 text-sm font-black uppercase text-cyan-700">Speaking Part 1</div>
+        <h2 className="text-2xl font-black leading-8 text-slate-950">{q.content}</h2>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button type="button" className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400" onClick={() => openAnswerPrompt({ title: q.content, label: 'Đáp án 1', text: q.optionA || 'Chưa có đáp án.' })}>Xem đáp án 1</button>
+          <button type="button" className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400" onClick={() => openAnswerPrompt({ title: q.content, label: 'Đáp án 2', text: q.optionB || 'Chưa có đáp án.' })}>Xem đáp án 2</button>
+        </div>
+      </section>
+    );
+  }
+
+  function renderSpeakingPracticePart1Group(questions) {
+    return (
+      <section className="overflow-hidden rounded-lg border border-cyan-200 bg-white shadow-sm">
+        <div className="border-b border-cyan-100 bg-cyan-50 px-5 py-4">
+          <div className="text-sm font-black uppercase text-cyan-700">Speaking Part 1</div>
+          <h2 className="text-2xl font-black text-slate-950">13 câu hỏi ngắn</h2>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {questions.map((q, index) => (
+            <div key={q.id} className="grid gap-3 px-5 py-4 md:grid-cols-[60px_minmax(0,1fr)_auto] md:items-center">
+              <div className="font-black text-slate-950">{index + 1}</div>
+              <div className="text-lg font-bold leading-7 text-slate-950">{q.content}</div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400" onClick={() => openAnswerPrompt({ title: q.content, label: 'Đáp án 1', text: q.optionA || 'Chưa có đáp án.' })}>Xem đáp án 1</button>
+                <button type="button" className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400" onClick={() => openAnswerPrompt({ title: q.content, label: 'Đáp án 2', text: q.optionB || 'Chưa có đáp án.' })}>Xem đáp án 2</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderSpeakingPracticeImage(q) {
+    const row = speakingImageRows(q)[0] || { question: q.content, answer: q.optionA || '' };
+    const isCompare = q.optionF === 'SPEAKING_COMPARE_LIST';
+    return (
+      <section className={`space-y-5 rounded-lg border bg-white p-5 shadow-sm ${isCompare ? 'border-orange-200' : 'border-emerald-200'}`}>
+        <div className={q.imageUrl2 ? 'grid gap-6 md:grid-cols-2 md:items-center' : 'flex justify-center'}>
+          {q.imageUrl && <div className="flex justify-center"><img className="max-h-80 rounded-sm object-contain" src={q.imageUrl} alt="Speaking image 1" /></div>}
+          {q.imageUrl2 && <div className="flex justify-center"><img className="max-h-80 rounded-sm object-contain" src={q.imageUrl2} alt="Speaking image 2" /></div>}
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+          <div className={`mb-2 text-sm font-black uppercase ${isCompare ? 'text-orange-700' : 'text-emerald-700'}`}>{isCompare ? 'Speaking Part 3' : 'Speaking Part 2'}</div>
+          <h2 className="text-2xl font-black leading-8 text-slate-950">{row.question}</h2>
+          <button type="button" className="mt-5 rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400" onClick={() => openAnswerPrompt({ title: row.question, label: 'Đáp án', text: row.answer || 'Chưa có đáp án.' })}>Xem đáp án</button>
+        </div>
+      </section>
+    );
+  }
+
+  function renderSpeakingPracticePart4(q) {
+    const row = speakingPart4CardRows(q)[0] || { content: q.content, answer: q.optionA || '' };
+    return (
+      <section className="rounded-lg border border-purple-300 bg-white p-5 shadow-sm">
+        <div className="mb-4 text-sm font-black uppercase text-purple-700">Speaking Part 4</div>
+        <h2 className="text-2xl font-black leading-8 text-slate-950">{row.content}</h2>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button type="button" className="btn bg-purple-600 text-white hover:bg-purple-500"><Mic size={17} />Ghi âm (120s)</button>
+          <button type="button" className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400" onClick={() => openAnswerPrompt({ title: row.content, label: 'Câu trả lời mẫu', text: row.answer || 'Chưa có đáp án.' })}>Xem đáp án</button>
+        </div>
+      </section>
+    );
+  }
+
+  function renderSpeakingPracticeScreen(screen, activeIndex, total) {
+    return (
+      <section className="space-y-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black uppercase text-slate-500">{screen.part}</div>
+              <h2 className="text-2xl font-black text-slate-950">{screen.title}</h2>
+              <p className="mt-1 text-sm text-slate-500">{screen.subtitle}</p>
+            </div>
+            <div className="rounded-md bg-slate-100 px-3 py-2 text-sm font-black text-slate-700">
+              Màn {activeIndex + 1}/{total}
+            </div>
+          </div>
+        </div>
+
+        {screen.type === 'part1Group' && renderSpeakingPracticePart1Group(screen.questions)}
+        {screen.type === 'part1' && renderSpeakingPracticeQ1(screen.q)}
+        {screen.type === 'image' && renderSpeakingPracticeImage(screen.q)}
+        {screen.type === 'part4' && renderSpeakingPracticePart4(screen.q)}
+
+        {!showReview && (
+          <div className="question-action-bar md:left-[260px]">
+            <div className="question-action-grid question-action-grid--five">
+              <button type="button" className="btn btn-muted question-action-btn" disabled={activeIndex === 0} onClick={() => setCurrentQuestionIndex(Math.max(activeIndex - 1, 0))}>Back</button>
+              <button type="button" className="btn btn-muted question-action-btn"><Flag size={16} />Báo lỗi</button>
+              <button type="button" className="btn btn-primary question-action-btn"><Mic size={17} />Ghi âm</button>
+              <button type="button" className="btn btn-primary question-action-btn" disabled={activeIndex >= total - 1} onClick={() => setCurrentQuestionIndex(Math.min(activeIndex + 1, total - 1))}>Next</button>
+              <button type="button" className="btn btn-primary question-action-btn" disabled={submitting} onClick={submit}><CheckCircle2 size={16} />{submitting ? 'Đang nộp...' : 'Nộp bài'}</button>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  function renderSpeakingPractice() {
+    if (exam.type !== 'SPEAKING') return null;
+    const screens = speakingPracticeScreens();
+    if (screens.length === 0) return null;
+    const activeIndex = Math.min(currentQuestionIndex, screens.length - 1);
+    return renderSpeakingPracticeScreen(screens[activeIndex], activeIndex, screens.length);
+  }
+
   function renderMixedSpeakingQ1ListQuestion(q) {
     return (
       <div className="space-y-4 rounded-lg bg-white p-4">
@@ -1842,7 +1988,7 @@ export default function ExamRunner() {
         </div>
       </div>
       {exam.audioUrl && <audio controls src={exam.audioUrl} className="w-full" />}
-      {isSpeakingImageTable() && (
+      {exam.type !== 'SPEAKING' && isSpeakingImageTable() && (
         <section className="space-y-8">
           {speakingImageGroups().slice(activeSpeakingGroupIndex, activeSpeakingGroupIndex + 1).map((group) => {
             const groupIndex = activeSpeakingGroupIndex;
@@ -1948,11 +2094,9 @@ export default function ExamRunner() {
           })}
         </section>
       )}
-      {exam.type !== 'MIXED' && renderSpeakingQ1List()}
-      {exam.type !== 'MIXED' && renderSpeakingImageList()}
-      {exam.type !== 'MIXED' && renderSpeakingPart4List()}
+      {renderSpeakingPractice()}
       {exam.type === 'WRITING' && renderWritingForm()}
-      {exam.type !== 'WRITING' && standardQuestions().map((q, i) => {
+      {exam.type !== 'WRITING' && exam.type !== 'SPEAKING' && standardQuestions().map((q, i) => {
         if (i !== currentQuestionIndex) return null;
         return (
         <div className="space-y-3" key={q.id} ref={(node) => { questionRefs.current[i] = node; }}>

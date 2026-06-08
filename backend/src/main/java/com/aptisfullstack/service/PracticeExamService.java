@@ -5,6 +5,9 @@ import com.aptisfullstack.domain.*;
 import com.aptisfullstack.dto.Dto.*;
 import com.aptisfullstack.exception.ApiException;
 import com.aptisfullstack.repository.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,7 @@ public class PracticeExamService {
   private final PracticeExamRepository exams;
   private final PracticeQuestionRepository questions;
   private final UserService users;
+  private static final String GENERATED_SPEAKING_PREFIX = "Speaking Practice - ";
 
   @Transactional(readOnly = true)
   public List<PracticeExamResponse> list(ExamType type) {
@@ -33,6 +37,62 @@ public class PracticeExamService {
     PracticeExam exam = PracticeExam.builder().title(r.title()).type(r.type()).duration(r.duration())
         .transcript(r.transcript()).audioUrl(r.audioUrl()).prompt(r.prompt()).build();
     return Mapper.practiceExam(exams.save(exam));
+  }
+
+  @Transactional
+  public PracticeExamResponse generateSpeaking() {
+    users.requireActiveSubscription();
+    List<PracticeQuestion> part1 = pickQuestions(questions.findReusableSpeakingQuestions(ExamType.SPEAKING, "SPEAKING_Q1_LIST", GENERATED_SPEAKING_PREFIX), 13, "Speaking Part 1");
+    List<PracticeQuestion> part2 = pickQuestions(questions.findReusableSpeakingQuestions(ExamType.SPEAKING, "SPEAKING_IMAGE_LIST", GENERATED_SPEAKING_PREFIX), 1, "Speaking Part 2");
+    List<PracticeQuestion> part3 = pickQuestions(questions.findReusableSpeakingQuestions(ExamType.SPEAKING, "SPEAKING_COMPARE_LIST", GENERATED_SPEAKING_PREFIX), 1, "Speaking Part 3");
+    List<PracticeQuestion> part4 = pickQuestions(questions.findReusableSpeakingQuestions(ExamType.SPEAKING, QuestionType.SPEAKING_PART4_LIST, GENERATED_SPEAKING_PREFIX), 1, "Speaking Part 4");
+
+    PracticeExam exam = exams.save(PracticeExam.builder()
+        .title(GENERATED_SPEAKING_PREFIX + Instant.now())
+        .type(ExamType.SPEAKING)
+        .duration(12)
+        .prompt("Auto-generated Speaking practice: 13 Part 1 questions, 1 Part 2 question, 1 Part 3 question, 1 Part 4 question.")
+        .build());
+    List<PracticeQuestion> cloned = new ArrayList<>();
+    part1.forEach((source) -> cloned.add(copyQuestion(source, exam, false)));
+    part2.forEach((source) -> cloned.add(copyQuestion(source, exam, true)));
+    part3.forEach((source) -> cloned.add(copyQuestion(source, exam, true)));
+    part4.forEach((source) -> cloned.add(copyQuestion(source, exam, true)));
+    exam.getQuestions().addAll(questions.saveAll(cloned));
+    return Mapper.practiceExam(exam);
+  }
+
+  private List<PracticeQuestion> pickQuestions(List<PracticeQuestion> pool, int count, String label) {
+    if (pool.size() < count) throw ApiException.bad(label + " needs " + count + " question(s), but only has " + pool.size() + ".");
+    List<PracticeQuestion> shuffled = new ArrayList<>(pool);
+    Collections.shuffle(shuffled);
+    return shuffled.subList(0, count);
+  }
+
+  private PracticeQuestion copyQuestion(PracticeQuestion source, PracticeExam exam, boolean firstPromptOnly) {
+    String content = firstPromptOnly ? firstLine(source.getContent()) : source.getContent();
+    return PracticeQuestion.builder()
+        .exam(exam)
+        .content(content)
+        .optionA(source.getOptionA())
+        .optionB(firstPromptOnly ? "" : source.getOptionB())
+        .optionC(firstPromptOnly ? "" : source.getOptionC())
+        .optionD(source.getOptionD())
+        .optionE(source.getOptionE())
+        .optionF(source.getOptionF())
+        .audioUrl(source.getAudioUrl())
+        .imageUrl(source.getImageUrl())
+        .imageUrl2(source.getImageUrl2())
+        .scriptText(source.getScriptText())
+        .correctAnswer(source.getCorrectAnswer())
+        .explanation(source.getExplanation())
+        .questionType(source.getQuestionType())
+        .build();
+  }
+
+  private String firstLine(String value) {
+    if (value == null) return "";
+    return value.lines().map(String::trim).filter((line) -> !line.isBlank()).findFirst().orElse("");
   }
 
   public PracticeExamResponse update(Long id, PracticeExamRequest r) {

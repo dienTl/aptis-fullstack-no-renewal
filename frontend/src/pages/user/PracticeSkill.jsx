@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, Clock, FileText, Headphones, Layers3, Mic, PenLine } from 'lucide-react';
 import { api } from '../../api/client';
 import { examDurationMinutes } from '../../utils/examDuration';
@@ -14,8 +14,11 @@ const skills = {
 
 export default function PracticeSkill() {
   const { skill } = useParams();
+  const navigate = useNavigate();
   const current = skills[skill];
   const [exams, setExams] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState('');
 
   useEffect(() => {
     if (current) api.get('/practice-exams', { params: { type: current.type } }).then((r) => setExams(r.data.data));
@@ -24,6 +27,19 @@ export default function PracticeSkill() {
   if (!current) return <Navigate to="/practice" replace />;
 
   const Icon = current.Icon;
+
+  async function generateSpeakingExam() {
+    setGenerating(true);
+    setGenerateError('');
+    try {
+      const response = await api.post('/practice-exams/speaking/generate');
+      navigate(`/practice/${skill}/${response.data.data.id}`);
+    } catch (error) {
+      setGenerateError(error.response?.data?.message || 'Không thể tạo đề Speaking.');
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -41,8 +57,19 @@ export default function PracticeSkill() {
               <p className="mt-1 text-sm text-slate-500">{exams.length} de dang co san</p>
             </div>
           </div>
+          {skill === 'speaking' && (
+            <button type="button" className="btn btn-primary" disabled={generating} onClick={generateSpeakingExam}>
+              <Mic size={16} />{generating ? 'Đang tạo đề...' : 'Tạo đề Speaking'}
+            </button>
+          )}
         </div>
       </section>
+
+      {generateError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {generateError}
+        </div>
+      )}
 
       {exams.length === 0 ? (
         <section className="rounded-lg border border-dashed border-slate-300 bg-white/80 p-8 text-center shadow-sm">

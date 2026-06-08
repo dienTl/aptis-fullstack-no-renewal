@@ -18,6 +18,9 @@ public class PracticeExamController {
   @GetMapping("/practice-exams/{id}") ApiResponse<PracticeExamResponse> one(@PathVariable Long id) {
     return ApiResponse.ok(practice.one(id));
   }
+  @PostMapping("/practice-exams/speaking/generate") ApiResponse<PracticeExamResponse> generateSpeaking() {
+    return ApiResponse.ok(practice.generateSpeaking());
+  }
   @GetMapping("/admin/practice-exams") ApiResponse<List<PracticeExamResponse>> adminList() {
     return ApiResponse.ok(practice.list(null));
   }

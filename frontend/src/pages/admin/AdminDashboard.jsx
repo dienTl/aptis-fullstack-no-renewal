@@ -153,7 +153,7 @@ const defaultListeningSingleMcQuestion = {
   options: ['', '', ''],
   answer: ''
 };
-const defaultSpeakingQ1Rows = Array.from({ length: 10 }, () => ({ content: '', answer1: '', answer2: '' }));
+const defaultSpeakingQ1Rows = Array.from({ length: 13 }, () => ({ content: '', answer1: '', answer2: '' }));
 const defaultSpeakingImageListQuestion = {
   title: 'Speaking II - Câu 1/37',
   imageUrl: '',
