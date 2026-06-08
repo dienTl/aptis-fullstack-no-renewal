@@ -343,6 +343,63 @@ export default function ExamRunner() {
     }));
   }
 
+  function speakingPart4CardRows(q) {
+    const lines = (q.content || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const questions = (lines.length > 0 ? lines : [q.content || 'Speaking Part 4 question']).slice(0, 3);
+    const answers = [q.optionA, q.optionB, q.optionC, q.correctAnswer, q.explanation, q.scriptText];
+    return questions.map((content, index) => ({ content, answer: answers[index] || '' }));
+  }
+
+  function speakingPart4CardTitle(q) {
+    return q.optionD?.trim() || speakingPart4CardRows(q)[0]?.content || q.content || 'Speaking Part 4';
+  }
+
+  function speakingPart4CardAnswerText(q) {
+    return speakingPart4CardRows(q)
+      .map((row, index) => `${index + 1}. ${row.content}\n${row.answer || 'Chưa có câu trả lời mẫu.'}`)
+      .join('\n\n');
+  }
+
+  function renderSpeakingPart4Card(q, index, compact = false) {
+    const rows = speakingPart4CardRows(q);
+    const title = speakingPart4CardTitle(q);
+    return (
+      <section key={q.id} className={`${compact ? '' : 'overflow-hidden'} rounded-lg border border-purple-300 bg-white shadow-sm`}>
+        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-lg border border-purple-200 bg-purple-100 text-xl font-black text-purple-700 shadow-md shadow-purple-100">{index + 1}</span>
+            <div className="min-w-0">
+              <h2 className="text-xl font-black leading-tight text-slate-950">{title}</h2>
+              <p className="mt-2 text-sm text-slate-500">Trả lời cả 3 câu hỏi trong 120 giây</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-muted"><Flag size={16} />Báo lỗi</button>
+            <button type="button" className="btn bg-purple-600 text-white hover:bg-purple-500"><Mic size={17} />Ghi âm (120s)</button>
+          </div>
+        </div>
+        <div className="space-y-4 px-5 pb-5">
+          {rows.map((row, rowIndex) => (
+            <div key={rowIndex} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-4">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-purple-100 font-black text-purple-700">{rowIndex + 1}</span>
+              <div className="font-bold leading-7 text-slate-950">{row.content}</div>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-purple-100 bg-purple-50 px-5 py-5">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between rounded-md border border-purple-300 bg-white px-4 py-3 font-bold text-slate-950"
+            onClick={() => openAnswerPrompt({ label: 'Câu trả lời mẫu', title, text: speakingPart4CardAnswerText(q) })}
+          >
+            <span className="flex items-center gap-2"><Volume2 size={18} className="text-purple-600" />Câu trả lời mẫu</span>
+            <ChevronDown size={18} className="text-purple-600" />
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   function activeSpeakingQuestion(group, groupIndex) {
     return group.questions[activeSpeakingTabs[groupIndex] || 0] || group.questions[0];
   }
@@ -406,37 +463,8 @@ export default function ExamRunner() {
     const questions = speakingPart4Questions();
     if (questions.length === 0) return null;
     return (
-      <section className="overflow-hidden rounded-md border border-cyan-100 bg-white shadow-xl shadow-slate-200/70">
-        <div className="border-b border-cyan-100 bg-gradient-to-r from-cyan-50 via-white to-amber-50 px-5 py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-cyan-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-wide text-cyan-700">
-                <Mic size={14} /> Speaking Part 4
-              </div>
-              <h2 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl">Danh sách câu hỏi</h2>
-            </div>
-            <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">
-              {questions.length} câu hỏi
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3 p-4 sm:p-5">
-          {questions.map((q, index) => (
-            <div key={q.id} className="group flex flex-col gap-3 rounded-md border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-100/60 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 flex-1 items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-900 text-sm font-black text-white shadow-sm group-hover:bg-cyan-700">{index + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black uppercase text-slate-400">Câu hỏi</div>
-                  <div className="mt-1 text-base font-bold leading-7 text-slate-950">{q.content}</div>
-                </div>
-              </div>
-              <button type="button" className="btn shrink-0 border-cyan-700 bg-cyan-600 px-5 py-2 text-white hover:bg-cyan-500" onClick={() => openAnswerPrompt({ label: 'Đáp án mẫu', title: q.content, text: modalAnswerText(q) })}>
-                <Volume2 size={17} /> Xem đáp án
-              </button>
-            </div>
-          ))}
-        </div>
+      <div className="space-y-5">
+        {questions.map((q, index) => renderSpeakingPart4Card(q, index))}
         {speakingPart4Prompt && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
             <div className="w-full max-w-2xl overflow-hidden rounded-md bg-white shadow-2xl">
@@ -460,7 +488,7 @@ export default function ExamRunner() {
             </div>
           </div>
         )}
-      </section>
+      </div>
     );
   }
 
@@ -608,15 +636,7 @@ export default function ExamRunner() {
   }
 
   function renderMixedSpeakingPart4Question(q) {
-    return (
-      <div className="space-y-4 rounded-lg bg-white p-4">
-        <div className="text-sm font-semibold text-slate-500">Speaking Part 4</div>
-        <p className="text-lg font-bold leading-7 text-slate-900">{q.content}</p>
-        <button type="button" className="btn shrink-0 border-cyan-700 bg-cyan-600 px-5 py-2 text-white hover:bg-cyan-500" onClick={() => toggleSampleAnswer(q)}>
-          <Volume2 size={17} /> Xem đáp án
-        </button>
-      </div>
-    );
+    return renderSpeakingPart4Card(q, 0, true);
   }
 
   function writingQuestions() {
@@ -1328,7 +1348,7 @@ export default function ExamRunner() {
     const topicLine = topicIndex >= 0 ? beforeLines[topicIndex] : beforeLines.find((line) => /topic:/i.test(line));
     const topic = topicLine ? topicLine.replace(/^.*?topic:\s*/i, '').trim() : '';
     const instruction = topicIndex >= 0 ? beforeLines.slice(topicIndex + 1).join('\n').trim() : '';
-    const rows = afterItems.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const rows = afterItems.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 7);
     return { title: title || 'Reading question', topic, instruction, rows };
   }
 
@@ -1360,9 +1380,20 @@ export default function ExamRunner() {
   function listeningMatchingData(q) {
     const lines = (q.content || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     const topicLine = lines.find((line) => /^topic:/i.test(line));
+    let transcript = q.scriptText || '';
+    let audioUrls = [];
+    try {
+      const parsed = JSON.parse(q.scriptText || '{}');
+      transcript = parsed.transcript || '';
+      audioUrls = Array.isArray(parsed.audioUrls) ? parsed.audioUrls : [];
+    } catch {
+      transcript = q.scriptText || '';
+    }
     return {
       topic: topicLine ? topicLine.replace(/^topic:\s*/i, '') : '',
-      instruction: lines.filter((line) => !/^topic:/i.test(line)).join(' ')
+      instruction: lines.filter((line) => !/^topic:/i.test(line)).join(' '),
+      transcript,
+      audioUrls
     };
   }
 
@@ -1370,24 +1401,33 @@ export default function ExamRunner() {
     const data = listeningMatchingData(q);
     return (
       <div className="space-y-4">
-        {q.audioUrl && (
+        {q.audioUrl && data.audioUrls.length === 0 && (
           <div className="rounded-md bg-red-600 px-4 py-3">
             <audio controls src={q.audioUrl} className="w-full accent-white" />
           </div>
         )}
+        {data.transcript && (
+          <button type="button" className="btn btn-muted stable-nav-btn" onClick={() => setShowScript((value) => !value)}>
+            {showScript ? 'Hide script' : 'Show script'}
+          </button>
+        )}
+        {showScript && data.transcript && <div className="panel whitespace-pre-wrap">{data.transcript}</div>}
         <div className="rounded-md bg-slate-100 p-5">
           <h3 className="text-lg font-black text-slate-950">Topic: {data.topic}</h3>
           <p className="mt-5 text-sm leading-7 text-slate-950">{data.instruction}</p>
           <div className="mt-5 space-y-3">
             {[0, 1, 2, 3].map((index) => (
-              <div key={index} className={`grid gap-3 rounded-md border p-3 md:grid-cols-[90px_minmax(0,1fr)] md:items-center ${subAnswerClass(q, index)}`}>
-                <span className="text-sm text-slate-950">Person {index + 1}</span>
-                <select className="input" value={matchingValue(q)[index]} disabled={questionLocked(q)} onChange={(e) => setMatchingValue(q, index, e.target.value)}>
-                  <option value="">-- Chọn đáp án --</option>
-                  {dropdownOptions(q).map((option) => (
-                    <option key={option.key} value={option.key}>{option.text}</option>
-                  ))}
-                </select>
+              <div key={index} className={`grid gap-3 rounded-md border p-3 md:grid-cols-[110px_minmax(0,1fr)] md:items-center ${subAnswerClass(q, index)}`}>
+                <span className="text-sm font-semibold text-slate-950">Person {index + 1}</span>
+                <div className="space-y-2">
+                  {data.audioUrls[index] && <audio controls src={data.audioUrls[index]} className="w-full" />}
+                  <select className="input" value={matchingValue(q)[index]} disabled={questionLocked(q)} onChange={(e) => setMatchingValue(q, index, e.target.value)}>
+                    <option value="">-- Chọn đáp án --</option>
+                    {dropdownOptions(q).map((option) => (
+                      <option key={option.key} value={option.key}>{option.text}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             ))}
           </div>

@@ -1,5 +1,5 @@
 import { Children, useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronUp, Download, Edit3, Plus, Save, Trash2, Upload } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, Download, Edit3, Mic, Plus, Save, Trash2, Upload, Volume2 } from 'lucide-react';
 import { api } from '../../api/client';
 import UserManagement from './UserManagement';
 import { durationForType, examDurationMinutes } from '../../utils/examDuration';
@@ -101,6 +101,7 @@ const defaultListeningMatchingQuestion = {
   topic: '',
   instruction: 'Four people are discussing their views on the topic above. Complete the sentences. Use each answer only once. You will not need two of the answers.',
   audioUrl: '',
+  audioUrls: ['', '', '', ''],
   transcript: '',
   options: ['', '', '', '', '', ''],
   answers: ['', '', '', '']
@@ -163,6 +164,14 @@ const defaultSpeakingImageListQuestion = {
     { content: '', answer: '' }
   ]
 };
+const defaultSpeakingPart4CardQuestion = {
+  title: 'Tell me a time you saved up to buy something for yourself',
+  rows: [
+    { content: 'Tell me a time you saved up to buy something for yourself', answer: '' },
+    { content: 'How did you feel?', answer: '' },
+    { content: 'People spend too much money on unimportant things. What do you think?', answer: '' }
+  ]
+};
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -211,6 +220,8 @@ export default function AdminDashboard() {
   const [speakingQ1Rows, setSpeakingQ1Rows] = useState(defaultSpeakingQ1Rows);
   const [speakingImageListExamId, setSpeakingImageListExamId] = useState('');
   const [speakingImageListQuestion, setSpeakingImageListQuestion] = useState(defaultSpeakingImageListQuestion);
+  const [speakingPart4CardExamId, setSpeakingPart4CardExamId] = useState('');
+  const [speakingPart4CardQuestion, setSpeakingPart4CardQuestion] = useState(defaultSpeakingPart4CardQuestion);
   const [practiceWritingPart1ExamId, setPracticeWritingPart1ExamId] = useState('');
   const [practiceWritingPart1Rows, setPracticeWritingPart1Rows] = useState(defaultWritingPart1Rows);
   const [practiceWritingLongExamId, setPracticeWritingLongExamId] = useState('');
@@ -243,6 +254,8 @@ export default function AdminDashboard() {
   const [practiceSpeakingQ1Rows, setPracticeSpeakingQ1Rows] = useState(defaultSpeakingQ1Rows);
   const [practiceSpeakingImageListExamId, setPracticeSpeakingImageListExamId] = useState('');
   const [practiceSpeakingImageListQuestion, setPracticeSpeakingImageListQuestion] = useState(defaultSpeakingImageListQuestion);
+  const [practiceSpeakingPart4CardExamId, setPracticeSpeakingPart4CardExamId] = useState('');
+  const [practiceSpeakingPart4CardQuestion, setPracticeSpeakingPart4CardQuestion] = useState(defaultSpeakingPart4CardQuestion);
   const [importExamId, setImportExamId] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [lesson, setLesson] = useState(emptyLesson);
@@ -369,7 +382,8 @@ export default function AdminDashboard() {
       listeningGroupMc: practice ? () => setPracticeListeningGroupMcQuestion(freshTemplate(defaultListeningGroupMcQuestion)) : () => setListeningGroupMcQuestion(freshTemplate(defaultListeningGroupMcQuestion)),
       listeningSingleMc: practice ? () => setPracticeListeningSingleMcQuestion(freshTemplate(defaultListeningSingleMcQuestion)) : () => setListeningSingleMcQuestion(freshTemplate(defaultListeningSingleMcQuestion)),
       speakingQ1: practice ? () => setPracticeSpeakingQ1Rows(freshTemplate(defaultSpeakingQ1Rows)) : () => setSpeakingQ1Rows(freshTemplate(defaultSpeakingQ1Rows)),
-      speakingImageList: practice ? () => setPracticeSpeakingImageListQuestion(freshTemplate(defaultSpeakingImageListQuestion)) : () => setSpeakingImageListQuestion(freshTemplate(defaultSpeakingImageListQuestion))
+      speakingImageList: practice ? () => setPracticeSpeakingImageListQuestion(freshTemplate(defaultSpeakingImageListQuestion)) : () => setSpeakingImageListQuestion(freshTemplate(defaultSpeakingImageListQuestion)),
+      speakingPart4Card: practice ? () => setPracticeSpeakingPart4CardQuestion(freshTemplate(defaultSpeakingPart4CardQuestion)) : () => setSpeakingPart4CardQuestion(freshTemplate(defaultSpeakingPart4CardQuestion))
     };
     resetters[name]?.();
   }
@@ -705,8 +719,10 @@ export default function AdminDashboard() {
     if (!examId) return setTemplateMessage('listeningMatching', practice, 'error', practice ? 'Please select a practice listening exam.' : 'Please select a listening exam.');
     const options = data.options.map((option) => option.trim());
     const answers = data.answers.map((answer) => answer.trim());
+    const audioUrls = (data.audioUrls || []).map((url) => url.trim());
     if (!data.topic.trim()) return setTemplateMessage('listeningMatching', practice, 'error', 'Vui lòng nhập chủ đề.');
     if (options.filter(Boolean).length < 4) return setTemplateMessage('listeningMatching', practice, 'error', 'Vui lòng nhập ít nhất 4 lựa chọn trả lời.');
+    if (audioUrls.some((url) => !url)) return setTemplateMessage('listeningMatching', practice, 'error', 'Vui lòng nhập đủ 4 file nghe cho Person 1-4.');
     try {
       const payload = {
         content: `Topic: ${data.topic.trim()}\n${data.instruction.trim()}`,
@@ -716,8 +732,8 @@ export default function AdminDashboard() {
         optionD: options[3] || '',
         optionE: options[4] || '',
         optionF: 'LISTENING_MATCHING',
-        audioUrl: data.audioUrl.trim(),
-        scriptText: data.transcript.trim(),
+        audioUrl: audioUrls[0] || data.audioUrl.trim(),
+        scriptText: JSON.stringify({ transcript: data.transcript.trim(), audioUrls }),
         correctAnswer: answers.join(','),
         explanation: 'Person 1 to Person 4 answers.',
         questionType: 'MATCHING_DROPDOWN'
@@ -975,6 +991,13 @@ export default function AdminDashboard() {
     }));
   }
 
+  function updateSpeakingPart4CardRow(setter, index, key, value) {
+    setter((current) => ({
+      ...current,
+      rows: current.rows.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: value } : row)
+    }));
+  }
+
   async function saveSpeakingImageListTemplate({ examId, data, practice = false }) {
     if (!examId) return setTemplateMessage('speakingImageList', practice, 'error', practice ? 'Please select a practice speaking exam.' : 'Please select a speaking exam.');
     const rows = data.rows.map((row) => ({ content: row.content.trim(), answer: row.answer.trim() }));
@@ -999,6 +1022,30 @@ export default function AdminDashboard() {
       await refresh();
     } catch (error) {
       setTemplateMessage('speakingImageList', practice, 'error', error.response?.data?.message || 'Cannot save speaking image list question.');
+    }
+  }
+
+  async function saveSpeakingPart4CardTemplate({ examId, data, practice = false }) {
+    if (!examId) return setTemplateMessage('speakingPart4Card', practice, 'error', practice ? 'Please select a practice speaking exam.' : 'Please select a speaking exam.');
+    const rows = data.rows.map((row) => ({ content: row.content.trim(), answer: row.answer.trim() }));
+    if (rows.some((row) => !row.content)) return setTemplateMessage('speakingPart4Card', practice, 'error', 'Vui lòng nhập đủ 3 câu hỏi Speaking Part 4.');
+    try {
+      const payload = {
+        content: rows.map((row) => row.content).join('\n'),
+        optionA: rows[0].answer,
+        optionB: rows[1].answer,
+        optionC: rows[2].answer,
+        optionD: data.title.trim() || rows[0].content,
+        optionF: 'SPEAKING_PART4_CARD',
+        questionType: 'SPEAKING_PART4_LIST'
+      };
+      if (practice) await api.post(`/admin/practice-exams/${examId}/questions`, payload);
+      else await api.post(`/admin/exams/${examId}/questions`, payload);
+      resetSavedTemplate('speakingPart4Card', practice);
+      setTemplateMessage('speakingPart4Card', practice, 'success', 'Speaking Part 4 card saved.');
+      await refresh();
+    } catch (error) {
+      setTemplateMessage('speakingPart4Card', practice, 'error', error.response?.data?.message || 'Cannot save Speaking Part 4 card.');
     }
   }
 
@@ -1091,6 +1138,19 @@ Who enjoys playing with their children?`, '', '', '', '', '', '', '', '', 'A,B,A
       await refresh();
     } catch (error) {
       setStatus({ type: 'error', text: error.response?.data?.message || 'Cannot save notification.' });
+    }
+  }
+
+  async function uploadTemplateAudio(file, onUrl) {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await api.post('/files/audio', formData);
+      onUrl(response.data.data);
+      setStatus({ type: 'success', text: 'Đã tải audio lên.' });
+    } catch (error) {
+      setStatus({ type: 'error', text: error.response?.data?.message || 'Cannot upload audio.' });
     }
   }
 
@@ -1326,6 +1386,7 @@ Who enjoys playing with their children?`, '', '', '', '', '', '', '', '', 'A,B,A
         onExamChange={setListeningMatchingExamId}
         onChange={(key, value) => setListeningMatchingQuestion((current) => ({ ...current, [key]: value }))}
         onArrayChange={(key, index, value) => updateListeningMatchingArray(setListeningMatchingQuestion, key, index, value)}
+        onAudioUpload={(file, index) => uploadTemplateAudio(file, (uploadedUrl) => updateListeningMatchingArray(setListeningMatchingQuestion, 'audioUrls', index, uploadedUrl))}
         onReset={() => setListeningMatchingQuestion(defaultListeningMatchingQuestion)}
         onSave={() => saveListeningMatchingTemplate({ examId: listeningMatchingExamId, data: listeningMatchingQuestion })}
       />
@@ -1393,6 +1454,19 @@ Who enjoys playing with their children?`, '', '', '', '', '', '', '', '', 'A,B,A
           onRowChange={(index, key, value) => updateSpeakingImageListRow(setSpeakingImageListQuestion, index, key, value)}
           onReset={() => setSpeakingImageListQuestion(defaultSpeakingImageListQuestion)}
           onSave={() => saveSpeakingImageListTemplate({ examId: speakingImageListExamId, data: speakingImageListQuestion })}
+        />
+
+        <SpeakingPart4CardTemplate
+          title="Speaking Part 4 card template"
+          status={templateStatus[templateKey('speakingPart4Card')]}
+          exams={exams.filter((item) => examMatchesSkill(item, 'SPEAKING'))}
+          examId={speakingPart4CardExamId}
+          data={speakingPart4CardQuestion}
+          onExamChange={setSpeakingPart4CardExamId}
+          onChange={(key, value) => setSpeakingPart4CardQuestion((current) => ({ ...current, [key]: value }))}
+          onRowChange={(index, key, value) => updateSpeakingPart4CardRow(setSpeakingPart4CardQuestion, index, key, value)}
+          onReset={() => setSpeakingPart4CardQuestion(defaultSpeakingPart4CardQuestion)}
+          onSave={() => saveSpeakingPart4CardTemplate({ examId: speakingPart4CardExamId, data: speakingPart4CardQuestion })}
         />
       </TemplateGroup>
 
@@ -1623,6 +1697,7 @@ Who enjoys playing with their children?`, '', '', '', '', '', '', '', '', 'A,B,A
         onExamChange={setPracticeListeningMatchingExamId}
         onChange={(key, value) => setPracticeListeningMatchingQuestion((current) => ({ ...current, [key]: value }))}
         onArrayChange={(key, index, value) => updateListeningMatchingArray(setPracticeListeningMatchingQuestion, key, index, value)}
+        onAudioUpload={(file, index) => uploadTemplateAudio(file, (uploadedUrl) => updateListeningMatchingArray(setPracticeListeningMatchingQuestion, 'audioUrls', index, uploadedUrl))}
         onReset={() => setPracticeListeningMatchingQuestion(defaultListeningMatchingQuestion)}
         onSave={() => saveListeningMatchingTemplate({ examId: practiceListeningMatchingExamId, data: practiceListeningMatchingQuestion, practice: true })}
       />
@@ -1690,6 +1765,19 @@ Who enjoys playing with their children?`, '', '', '', '', '', '', '', '', 'A,B,A
           onRowChange={(index, key, value) => updateSpeakingImageListRow(setPracticeSpeakingImageListQuestion, index, key, value)}
           onReset={() => setPracticeSpeakingImageListQuestion(defaultSpeakingImageListQuestion)}
           onSave={() => saveSpeakingImageListTemplate({ examId: practiceSpeakingImageListExamId, data: practiceSpeakingImageListQuestion, practice: true })}
+        />
+
+        <SpeakingPart4CardTemplate
+          title="Practice Speaking Part 4 card template"
+          status={templateStatus[templateKey('speakingPart4Card', true)]}
+          exams={practiceExams.filter((item) => examMatchesSkill(item, 'SPEAKING'))}
+          examId={practiceSpeakingPart4CardExamId}
+          data={practiceSpeakingPart4CardQuestion}
+          onExamChange={setPracticeSpeakingPart4CardExamId}
+          onChange={(key, value) => setPracticeSpeakingPart4CardQuestion((current) => ({ ...current, [key]: value }))}
+          onRowChange={(index, key, value) => updateSpeakingPart4CardRow(setPracticeSpeakingPart4CardQuestion, index, key, value)}
+          onReset={() => setPracticeSpeakingPart4CardQuestion(defaultSpeakingPart4CardQuestion)}
+          onSave={() => saveSpeakingPart4CardTemplate({ examId: practiceSpeakingPart4CardExamId, data: practiceSpeakingPart4CardQuestion, practice: true })}
         />
       </TemplateGroup>
 
@@ -2515,8 +2603,9 @@ function ReadingDropdownParagraphsTemplate({ title, exams, examId, data, onExamC
   );
 }
 
-function ListeningMatchingTemplate({ title, exams, examId, data, onExamChange, onChange, onArrayChange, onReset, onSave }) {
+function ListeningMatchingTemplate({ title, exams, examId, data, onExamChange, onChange, onArrayChange, onAudioUpload, onReset, onSave }) {
   const answerKeys = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const audioUrls = data.audioUrls || ['', '', '', ''];
   return (
     <section className="panel space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2533,10 +2622,21 @@ function ListeningMatchingTemplate({ title, exams, examId, data, onExamChange, o
             <option value="">Select listening exam</option>
             {exams.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
           </select>
-          <input className="input" placeholder="URL audio" value={data.audioUrl} onChange={(e) => onChange('audioUrl', e.target.value)} />
           <input className="input" placeholder="Topic, ví dụ: Protect the environment" value={data.topic} onChange={(e) => onChange('topic', e.target.value)} />
           <textarea className="input min-h-24" placeholder="Instruction" value={data.instruction} onChange={(e) => onChange('instruction', e.target.value)} />
           <textarea className="input min-h-32" placeholder="Đoạn văn / transcript ẩn hiện khi bấm Show paragraph" value={data.transcript} onChange={(e) => onChange('transcript', e.target.value)} />
+          <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3">
+            <div className="font-black text-slate-950">Audio cho từng Person</div>
+            {audioUrls.map((url, index) => (
+              <div key={index} className="grid gap-2 md:grid-cols-[1fr_auto]">
+                <input className="input" placeholder={`Person ${index + 1} audio URL`} value={url} onChange={(e) => onArrayChange('audioUrls', index, e.target.value)} />
+                <label className="btn btn-muted cursor-pointer justify-center">
+                  Upload
+                  <input className="hidden" type="file" accept="audio/*" onChange={(e) => onAudioUpload?.(e.target.files?.[0], index)} />
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -2567,7 +2667,11 @@ function ListeningMatchingTemplate({ title, exams, examId, data, onExamChange, o
 
       <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
         <div className="mb-2 font-black text-slate-950">Xem trước</div>
-        <div className="rounded-md bg-red-600 px-4 py-3 text-white">Trình phát audio</div>
+        <div className="space-y-2">
+          {audioUrls.map((url, index) => (
+            <div key={index} className="rounded-md bg-red-600 px-4 py-3 text-white">Person {index + 1}: {url ? 'Audio ready' : 'Chưa có audio'}</div>
+          ))}
+        </div>
         <div className="mt-4 rounded-md bg-slate-100 p-4">
           <h3 className="font-black text-slate-950">Topic: {data.topic || '...'}</h3>
           <p className="mt-4">{data.instruction}</p>
@@ -2890,6 +2994,77 @@ function SpeakingImageListTemplate({ title, exams, examId, data, onExamChange, o
 
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary" onClick={onSave}><Plus size={16} />Lưu câu Speaking có ảnh</button>
+        <button className="btn btn-muted" onClick={onReset}>Đặt lại mẫu</button>
+      </div>
+    </section>
+  );
+}
+
+function SpeakingPart4CardTemplate({ title, status, exams, examId, data, onExamChange, onChange, onRowChange, onReset, onSave }) {
+  return (
+    <section className="panel space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-black">{title}</h2>
+          <p className="text-sm text-slate-500">Tạo 1 giao diện Speaking Part 4 gồm 3 câu hỏi, trả lời trong 120 giây.</p>
+        </div>
+        <span className="rounded-md bg-purple-50 px-3 py-1 text-sm font-bold text-purple-700">SPEAKING_PART4_CARD</span>
+      </div>
+
+      {status && (
+        <div className={`rounded-md px-3 py-2 text-sm font-semibold ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          {status.text}
+        </div>
+      )}
+
+      <div className="grid gap-3 md:grid-cols-[1fr_2fr]">
+        <select className="input" value={examId} onChange={(e) => onExamChange(e.target.value)}>
+          <option value="">Chọn đề Speaking</option>
+          {exams.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+        </select>
+        <input className="input" placeholder="Tiêu đề card" value={data.title} onChange={(e) => onChange('title', e.target.value)} />
+      </div>
+
+      <div className="space-y-3">
+        {data.rows.map((row, index) => (
+          <div key={index} className="rounded-md border border-slate-200 bg-white p-3">
+            <div className="mb-2 font-black text-slate-950">Câu {index + 1}</div>
+            <div className="grid gap-2 md:grid-cols-[1fr_1fr]">
+              <input className="input" placeholder={`Câu hỏi ${index + 1}`} value={row.content} onChange={(e) => onRowChange(index, 'content', e.target.value)} />
+              <textarea className="input min-h-20" placeholder="Câu trả lời mẫu" value={row.answer} onChange={(e) => onRowChange(index, 'answer', e.target.value)} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-md border border-purple-200 bg-purple-50 p-4">
+        <div className="rounded-md border border-purple-300 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
+            <div className="flex min-w-0 items-center gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-purple-200 bg-purple-100 text-lg font-black text-purple-700 shadow-md">1</span>
+              <div className="min-w-0">
+                <h3 className="text-lg font-black text-slate-950">{data.title || data.rows[0]?.content || 'Speaking Part 4'}</h3>
+                <p className="mt-1 text-sm text-slate-500">Trả lời cả 3 câu hỏi trong 120 giây</p>
+              </div>
+            </div>
+            <button type="button" className="rounded-md bg-purple-600 px-5 py-3 font-bold text-white"><Mic size={16} className="inline" /> Ghi âm (120s)</button>
+          </div>
+          <div className="space-y-4 p-5">
+            {data.rows.map((row, index) => (
+              <div key={index} className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-4">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-purple-100 font-black text-purple-700">{index + 1}</span>
+                <div className="font-bold text-slate-950">{row.content || `Question ${index + 1}`}</div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-purple-100 bg-purple-50 p-5">
+            <div className="rounded-md border border-purple-300 bg-white px-4 py-3 font-bold text-slate-950"><Volume2 size={16} className="mr-2 inline text-purple-600" />Câu trả lời mẫu</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button className="btn btn-primary" onClick={onSave}><Plus size={16} />Lưu Speaking Part 4 card</button>
         <button className="btn btn-muted" onClick={onReset}>Đặt lại mẫu</button>
       </div>
     </section>
