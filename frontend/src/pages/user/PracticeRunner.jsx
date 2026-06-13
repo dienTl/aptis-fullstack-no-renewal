@@ -711,7 +711,8 @@ export default function PracticeRunner() {
   }
 
   function renderSpeakingPracticeImage(q) {
-    const row = speakingImageRows(q)[0] || { question: q.content, answer: q.optionA || '' };
+    const rows = speakingImageRows(q);
+    const visibleRows = rows.length > 0 ? rows : [{ question: q.content, answer: q.optionA || '' }];
     const isCompare = q.optionF === 'SPEAKING_COMPARE_LIST';
     return (
       <section className={`space-y-5 rounded-lg border bg-white p-5 shadow-sm ${isCompare ? 'border-orange-200' : 'border-emerald-200'}`}>
@@ -721,8 +722,19 @@ export default function PracticeRunner() {
         </div>
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
           <div className={`mb-2 text-sm font-black uppercase ${isCompare ? 'text-orange-700' : 'text-emerald-700'}`}>{isCompare ? 'Speaking Part 3' : 'Speaking Part 2'}</div>
-          <h2 className="text-2xl font-black leading-8 text-slate-950">{row.question}</h2>
+          <div className="mt-4 space-y-4">
+            {visibleRows.map((row, index) => (
+              <div key={index} className="rounded-md border border-slate-200 bg-white p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-md text-sm font-black text-white ${isCompare ? 'bg-orange-500' : 'bg-emerald-500'}`}>{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-xl font-black leading-8 text-slate-950">{row.question}</h2>
           <button type="button" className="mt-5 rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400" onClick={() => openAnswerPrompt({ title: row.question, label: 'Đáp án', text: row.answer || 'Chưa có đáp án.' })}>Xem đáp án</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     );

@@ -55,9 +55,9 @@ public class PracticeExamService {
         .build());
     List<PracticeQuestion> cloned = new ArrayList<>();
     part1.forEach((source) -> cloned.add(copyQuestion(source, exam, false)));
-    part2.forEach((source) -> cloned.add(copyQuestion(source, exam, true)));
-    part3.forEach((source) -> cloned.add(copyQuestion(source, exam, true)));
-    part4.forEach((source) -> cloned.add(copyQuestion(source, exam, true)));
+    part2.forEach((source) -> cloned.add(copyQuestion(source, exam)));
+    part3.forEach((source) -> cloned.add(copyQuestion(source, exam)));
+    part4.forEach((source) -> cloned.add(copyQuestion(source, exam)));
     exam.getQuestions().addAll(questions.saveAll(cloned));
     return Mapper.practiceExam(exam);
   }
@@ -88,6 +88,10 @@ public class PracticeExamService {
         .explanation(source.getExplanation())
         .questionType(source.getQuestionType())
         .build();
+  }
+
+  private PracticeQuestion copyQuestion(PracticeQuestion source, PracticeExam exam) {
+    return copyQuestion(source, exam, false);
   }
 
   private String firstLine(String value) {
