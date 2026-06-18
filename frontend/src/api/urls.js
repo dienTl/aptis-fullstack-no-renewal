@@ -9,10 +9,6 @@ export function backendOrigin() {
   return API_URL.replace(/\/api\/?$/, '');
 }
 
-export function socketUrl() {
-  return `${backendOrigin()}/ws`;
-}
-
 export function assetUrl(path) {
   if (!path) return '';
   if (path.startsWith('http')) return path;

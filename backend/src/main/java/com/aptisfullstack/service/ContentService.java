@@ -8,7 +8,6 @@ import com.aptisfullstack.repository.*;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service @RequiredArgsConstructor
@@ -18,7 +17,6 @@ public class ContentService {
   private final MessageRepository messages;
   private final ExamReviewRepository reviews;
   private final UserRepository users;
-  private final SimpMessagingTemplate ws;
 
   public Lesson lesson(LessonRequest r) { return lessons.save(Lesson.builder().title(r.title()).type(r.type()).content(r.content()).build()); }
   public List<Lesson> lessons() { return lessons.findAll(); }
@@ -38,7 +36,6 @@ public class ContentService {
   }
   private Notification notifyFor(String targetRole, String title, String content) {
     Notification n = notifications.save(Notification.builder().title(title).content(content).targetRole(targetRole).build());
-    ws.convertAndSend("/topic/notifications", n);
     return n;
   }
   public List<Notification> notifications(User user) {
@@ -50,9 +47,7 @@ public class ContentService {
     Notification n = notifications.findById(id).orElseThrow(() -> ApiException.notFound("Notification not found"));
     n.setTitle(r.title());
     n.setContent(r.content());
-    Notification saved = notifications.save(n);
-    ws.convertAndSend("/topic/notifications", saved);
-    return saved;
+    return notifications.save(n);
   }
   public void deleteNotification(Long id) {
     if (!notifications.existsById(id)) throw ApiException.notFound("Notification not found");
@@ -60,10 +55,7 @@ public class ContentService {
   }
   public Message send(User sender, MessageRequest r) {
     User receiver = users.findById(r.receiverId()).orElseThrow(() -> ApiException.notFound("Receiver not found"));
-    Message m = messages.save(Message.builder().sender(sender).receiver(receiver).content(r.content()).build());
-    ws.convertAndSendToUser(receiver.getEmail(), "/queue/messages", m);
-    if (!receiver.getEmail().equals(sender.getEmail())) ws.convertAndSendToUser(sender.getEmail(), "/queue/messages", m);
-    return m;
+    return messages.save(Message.builder().sender(sender).receiver(receiver).content(r.content()).build());
   }
   public List<Message> chat(Long a, Long b) {
     return messages.findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByCreatedAtAsc(a, b, a, b);

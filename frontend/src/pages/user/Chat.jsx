@@ -1,9 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import { useEffect, useMemo, useState } from 'react';
 import { Send } from 'lucide-react';
 import { api } from '../../api/client';
-import { socketUrl } from '../../api/urls';
 import { useAuth } from '../../auth/AuthContext';
 
 export default function Chat() {
@@ -12,9 +9,7 @@ export default function Chat() {
   const [receiverId, setReceiverId] = useState('');
   const [content, setContent] = useState('');
   const [messages, setMessages] = useState([]);
-  const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState('');
-  const clientRef = useRef(null);
 
   const activeReceiverId = Number(receiverId);
   const visibleMessages = useMemo(() => messages.filter((m) => {
@@ -22,38 +17,6 @@ export default function Chat() {
     return (m.sender.id === user.id && m.receiver.id === activeReceiverId)
       || (m.sender.id === activeReceiverId && m.receiver.id === user.id);
   }), [messages, activeReceiverId, user]);
-
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return undefined;
-
-    const client = new Client({
-      webSocketFactory: () => new SockJS(socketUrl()),
-      connectHeaders: { Authorization: `Bearer ${token}` },
-      reconnectDelay: 3000,
-      onConnect: () => {
-        setConnected(true);
-        setStatus('');
-        client.subscribe('/user/queue/messages', (frame) => {
-          const message = JSON.parse(frame.body);
-          setMessages((current) => {
-            if (current.some((item) => item.id === message.id)) return current;
-            return [...current, message].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
-          });
-        });
-      },
-      onDisconnect: () => setConnected(false),
-      onStompError: () => setConnected(false),
-      onWebSocketClose: () => setConnected(false)
-    });
-
-    clientRef.current = client;
-    client.activate();
-    return () => {
-      client.deactivate();
-      clientRef.current = null;
-    };
-  }, []);
 
   useEffect(() => {
     api.get('/chat/users').then((response) => {
@@ -103,10 +66,8 @@ export default function Chat() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-black">Realtime chat</h1>
-        <span className={`text-sm font-bold ${connected ? 'text-green-700' : 'text-red-700'}`}>
-          {connected ? 'Connected' : 'Disconnected'}
-        </span>
+        <h1 className="text-2xl font-black">Chat</h1>
+        <span className="text-sm font-bold text-slate-500">Manual refresh</span>
       </div>
       {status && <div className="panel border-red-200 bg-red-50 text-red-800">{status}</div>}
 

@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,14 +35,12 @@ public class ExamService {
     return Mapper.exam(exams.findById(id).orElseThrow(() -> ApiException.notFound("Exam not found")));
   }
 
-  @CacheEvict(value = {"exams", "exam"}, allEntries = true)
   public ExamResponse create(ExamRequest r) {
     Exam exam = Exam.builder().title(r.title()).type(r.type()).duration(r.duration())
         .transcript(r.transcript()).audioUrl(r.audioUrl()).prompt(r.prompt()).build();
     return Mapper.exam(exams.save(exam));
   }
 
-  @CacheEvict(value = {"exams", "exam"}, allEntries = true)
   public ExamResponse update(Long id, ExamRequest r) {
     Exam exam = exams.findById(id).orElseThrow(() -> ApiException.notFound("Exam not found"));
     exam.setTitle(r.title());
@@ -55,7 +52,6 @@ public class ExamService {
     return Mapper.exam(exams.save(exam));
   }
 
-  @CacheEvict(value = {"exams", "exam"}, allEntries = true)
   @Transactional
   public void delete(Long id) {
     if (!exams.existsById(id)) throw ApiException.notFound("Exam not found");
@@ -63,7 +59,6 @@ public class ExamService {
     exams.deleteById(id);
   }
 
-  @CacheEvict(value = {"exams", "exam"}, allEntries = true)
   public QuestionResponse addQuestion(Long examId, QuestionRequest r) {
     Exam exam = exams.findById(examId).orElseThrow(() -> ApiException.notFound("Exam not found"));
     Question q = Question.builder().exam(exam).content(r.content()).optionA(r.optionA()).optionB(r.optionB())
@@ -73,7 +68,6 @@ public class ExamService {
     return Mapper.question(questions.save(q));
   }
 
-  @CacheEvict(value = {"exams", "exam"}, allEntries = true)
   @Transactional
   public QuestionImportResponse importQuestions(Long examId, MultipartFile file) {
     if (file == null || file.isEmpty()) throw ApiException.bad("CSV file is required");
@@ -168,7 +162,6 @@ public class ExamService {
     }
   }
 
-  @CacheEvict(value = {"exams", "exam"}, allEntries = true)
   public QuestionResponse updateQuestion(Long questionId, QuestionRequest r) {
     Question q = questions.findById(questionId).orElseThrow(() -> ApiException.notFound("Question not found"));
     q.setContent(r.content());
@@ -188,7 +181,6 @@ public class ExamService {
     return Mapper.question(questions.save(q));
   }
 
-  @CacheEvict(value = {"exams", "exam"}, allEntries = true)
   public void deleteQuestion(Long questionId) {
     if (!questions.existsById(questionId)) throw ApiException.notFound("Question not found");
     questions.deleteById(questionId);

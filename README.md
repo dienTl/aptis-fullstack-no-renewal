@@ -1,31 +1,25 @@
 # Aptis key
 
-Hệ thống luyện thi Aptis lấy cảm hứng từ AptisKey.
+Practice app for Aptis-style exam preparation.
 
-## Công nghệ
+## Stack
 
-- Backend: Java 17, Spring Boot 3, Spring Security + JWT, JPA, MySQL, Redis cache, WebSocket
+- Backend: Java 17, Spring Boot 3, Spring Security + JWT, JPA, MySQL
 - Frontend: React, Vite, React Router, Axios, Tailwind CSS
 
-## Cách chạy
+## Run Locally
 
-Khởi động MySQL local. Ứng dụng sẽ tạo/sử dụng database tên `aptis_fullstack_no_renewal`.
+Start local MySQL first. The app uses database `aptis_fullstack_no_renewal`.
 
-Cấu hình database mặc định:
+Default database config:
 
-- Tên đăng nhập: `root`
-- Mật khẩu: để trống
+- Username: `root`
+- Password: `demo123`
 
-Nếu MySQL có mật khẩu, hãy set trước khi chạy backend:
+If your MySQL password is different, set it before starting the backend:
 
 ```powershell
 $env:DB_PASSWORD="your_mysql_password"
-```
-
-Redis là tùy chọn khi phát triển local. Cache mặc định dùng bộ nhớ trong. Để dùng Redis cache:
-
-```powershell
-$env:CACHE_TYPE="redis"
 ```
 
 Backend:
@@ -49,7 +43,7 @@ Backend: http://localhost:8080
 
 Swagger: http://localhost:8080/swagger-ui/index.html
 
-Admin mặc định:
+Default admin:
 
 - Email: `admin@aptis.local`
 - Password: `admin123`

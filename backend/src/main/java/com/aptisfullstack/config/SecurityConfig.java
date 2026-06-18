@@ -27,7 +27,7 @@ public class SecurityConfig {
         .cors(c -> c.configurationSource(corsSource()))
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(a -> a
-            .requestMatchers("/api/auth/**", "/api/webhooks/**", "/ws/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+            .requestMatchers("/api/auth/**", "/api/webhooks/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
             .anyRequest().authenticated())
         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
